@@ -26,4 +26,4 @@
 | `<all_urls>` | To work on all websites |
 
 ## Contact
-If you have questions: [daniel.dalacort@gmail.com](mailto:daniel.dalacort@gmail.com)
+If you have questions: [pprupx@outlook.com](mailto:pprupx@outlook.com)
