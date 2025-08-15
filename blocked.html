@@ -4,158 +4,238 @@
   <meta charset="UTF-8">
   <title>Сайт заблокирован</title>
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
     html, body {
       height: 100%;
-      margin: 0;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      background-attachment: fixed;
-      background-size: cover;
+      background: #f8f9fa;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       overflow: hidden;
     }
     
     .container {
-      background: white;
-      padding: 40px;
-      border-radius: 20px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      background: #fafbfc;
+      padding: 48px;
+      border-radius: 24px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
       text-align: center;
-      max-width: 500px;
-      margin: 20px;
+      max-width: 520px;
+      margin: 24px;
       position: relative;
       z-index: 10;
+      border: 1px solid #e8eaed;
+    }
+    
+    .icon-container {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #ea4335, #d93025);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 32px;
+      box-shadow: 0 8px 24px rgba(234, 67, 53, 0.3);
+      position: relative;
     }
     
     .icon {
-      font-size: 4em;
-      margin-bottom: 20px;
+      font-size: 32px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
     }
     
     h1 {
-      font-size: 2em;
-      color: #d32f2f;
-      margin-bottom: 20px;
+      font-size: 28px;
+      color: #202124;
+      margin-bottom: 16px;
       font-weight: 600;
+      letter-spacing: -0.5px;
     }
     
     .message {
-      color: #666;
-      font-size: 1.1em;
+      color: #5f6368;
+      font-size: 16px;
       line-height: 1.6;
-      margin-bottom: 30px;
+      margin-bottom: 32px;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
     }
     
-    .stats {
-      background: #f5f5f5;
-      padding: 20px;
-      border-radius: 10px;
-      margin: 20px 0;
+    .stats-card {
+      background: #f8f9fa;
+      padding: 24px;
+      border-radius: 16px;
+      margin: 32px 0;
+      border: 1px solid #e8eaed;
     }
     
-    .stats h3 {
-      color: #333;
-      margin-bottom: 15px;
+    .stats-title {
+      color: #202124;
+      margin-bottom: 16px;
+      font-size: 18px;
+      font-weight: 500;
     }
     
     .time-spent {
-      font-size: 1.5em;
-      color: #2196f3;
-      font-weight: bold;
-      min-height: 1.5em;
+      font-size: 24px;
+      color: #1a73e8;
+      font-weight: 600;
+      min-height: 32px;
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+      word-break: break-word;
     }
     
-    .unblock-btn {
-      background: #d32f2f;
-      color: white;
+    .buttons-container {
+      display: flex;
+      justify-content: center;
+      margin: 32px 0;
+    }
+    
+    .btn {
+      padding: 16px 32px;
       border: none;
-      padding: 15px 30px;
-      border-radius: 25px;
-      font-size: 1.1em;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 500;
       cursor: pointer;
-      transition: all 0.3s ease;
-      margin: 10px;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 200px;
+      justify-content: center;
     }
     
-    .unblock-btn:hover {
-      background: #b71c1c;
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(211, 47, 47, 0.3);
-    }
-    
-    .back-btn {
-      background: #ff9800;
+    .btn-primary {
+      background: #1a73e8;
       color: white;
-      border: none;
-      padding: 15px 30px;
-      border-radius: 25px;
-      font-size: 1.1em;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      margin: 10px;
     }
     
-    .back-btn:hover {
-      background: #f57c00;
+    .btn-primary:hover {
+      background: #1557b0;
       transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(255, 152, 0, 0.3);
+      box-shadow: 0 8px 24px rgba(26, 115, 232, 0.3);
     }
     
     .footer {
-      margin-top: 30px;
-      color: #999;
-      font-size: 0.9em;
+      margin-top: 32px;
+      color: #9aa0a6;
+      font-size: 14px;
+      font-weight: 500;
     }
     
-    /* Дополнительный фон для устранения швов */
-    .bg-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      background-attachment: fixed;
-      background-size: cover;
-      z-index: -1;
-    }
-    
-    /* Анимация для статистики */
     .loading {
-      color: #999;
+      color: #9aa0a6;
       font-style: italic;
     }
     
     .error {
-      color: #d32f2f;
+      color: #ea4335;
       font-style: italic;
+    }
+    
+    /* Анимации */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .container {
+      animation: fadeInUp 0.6s ease-out;
+    }
+    
+    .icon-container {
+      animation: fadeInUp 0.6s ease-out 0.1s both;
+    }
+    
+    h1 {
+      animation: fadeInUp 0.6s ease-out 0.2s both;
+    }
+    
+    .message {
+      animation: fadeInUp 0.6s ease-out 0.3s both;
+    }
+    
+    .stats-card {
+      animation: fadeInUp 0.6s ease-out 0.4s both;
+    }
+    
+    .buttons-container {
+      animation: fadeInUp 0.6s ease-out 0.5s both;
+    }
+    
+    .footer {
+      animation: fadeInUp 0.6s ease-out 0.6s both;
+    }
+    
+    /* Адаптивность */
+    @media (max-width: 600px) {
+      .container {
+        padding: 32px 24px;
+        margin: 16px;
+        border-radius: 20px;
+      }
+      
+      .btn {
+        min-width: 100%;
+        max-width: 280px;
+      }
+      
+      h1 {
+        font-size: 24px;
+      }
+      
+      .message {
+        font-size: 15px;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="bg-overlay"></div>
   <div class="container">
-    <div class="icon">🚫</div>
-    <h1>Сайт заблокирован</h1>
-    <div class="message">
-      Извини, но ты сам попросил заблокировать этот сайт! 😅<br><br>
-      Если передумал, можешь разблокировать его или вернуться к предыдущей странице.
+    <div class="icon-container">
+      <div class="icon">🚫</div>
     </div>
     
-    <div class="stats">
-      <h3>Статистика использования</h3>
+    <h1>Сайт заблокирован</h1>
+    
+    <div class="message">
+      Вы заблокировали этот сайт для контроля времени. Если передумали, можете разблокировать его.
+    </div>
+    
+    <div class="stats-card">
+      <div class="time-spent">Проведено времени:</div>
       <div class="time-spent" id="timeSpent">Загрузка...</div>
     </div>
     
-    <div>
-      <button class="unblock-btn" id="btnUnblock">🔓 Разблокировать сайт</button>
-      <button class="back-btn" id="btnBack">⬅️ Назад</button>
+    <div class="buttons-container">
+      <button class="btn btn-primary" id="btnUnblock">
+        <span>🔓</span>
+        Разблокировать сайт
+      </button>
     </div>
     
     <div class="footer">
-      Website Time Tracker - Контролируйте свое время в интернете
+      Website Time Tracker
     </div>
   </div>
 

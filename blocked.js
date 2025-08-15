@@ -170,7 +170,7 @@
     
     const timeElement = $('timeSpent');
     if (timeElement) {
-      timeElement.textContent = `Проведено времени: ${timeText}`;
+      timeElement.textContent = `${timeText}`;
       timeElement.className = 'time-spent';
       console.log('Element updated successfully');
     } else {
