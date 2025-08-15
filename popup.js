@@ -2,7 +2,7 @@
 let sitesData = {};
 let activeDomain = null;
 let currentPage = 1;
-const sitesPerPage = 10;
+const sitesPerPage = 5;
 
 window.blockedSites = [];
 chrome.storage.local.get({ blocked: [] }, data => {
