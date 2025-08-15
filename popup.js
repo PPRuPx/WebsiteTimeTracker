@@ -4,6 +4,11 @@ let activeDomain = null;
 let currentPage = 1;
 const sitesPerPage = 10;
 
+window.blockedSites = [];
+chrome.storage.local.get({ blocked: [] }, data => {
+  window.blockedSites = data.blocked;
+});
+
 // --- Форматирование времени ---
 function formatTime(milliseconds) {
   const seconds = Math.floor(milliseconds / 1000);
@@ -15,8 +20,12 @@ function formatTime(milliseconds) {
 
 // --- Загрузка данных из chrome.storage.local ---
 function loadData() {
-  chrome.storage.local.get({ sites: {} }, (data) => {
+  chrome.storage.local.get({ sites: {}, blocked: [] }, (data) => {
+    console.log('Loading data from storage:', data);
     sitesData = data.sites;
+    window.blockedSites = data.blocked;
+    console.log('Sites data loaded:', sitesData);
+    console.log('Blocked sites loaded:', window.blockedSites);
     renderTable();
   });
 }
@@ -41,6 +50,101 @@ function updateActiveDomain() {
   });
 }
 
+// --- Функция блокировки/разблокировки сайта ---
+function toggleSiteBlock(domain) {
+  console.log(`Attempting to toggle block for domain: ${domain}`);
+  
+  chrome.storage.local.get({ blocked: [] }, data => {
+    let blocked = data.blocked;
+    const isCurrentlyBlocked = blocked.includes(domain);
+    
+    console.log(`Current blocked sites:`, blocked);
+    console.log(`Domain ${domain} is currently blocked:`, isCurrentlyBlocked);
+    
+    if (isCurrentlyBlocked) {
+      // Разблокируем сайт
+      blocked = blocked.filter(d => d !== domain);
+      console.log(`Site unblocked: ${domain}`);
+    } else {
+      // Блокируем сайт
+      blocked.push(domain);
+      console.log(`Site blocked: ${domain}`);
+    }
+    
+    console.log(`New blocked sites list:`, blocked);
+    
+    chrome.storage.local.set({ blocked }, () => {
+      if (chrome.runtime.lastError) {
+        console.error('Error saving blocked sites:', chrome.runtime.lastError);
+        return;
+      }
+      
+      window.blockedSites = blocked;
+      console.log(`Blocked sites updated in memory:`, window.blockedSites);
+      
+      // Показываем уведомление
+      const message = isCurrentlyBlocked ? `Site ${domain} unblocked` : `Site ${domain} blocked`;
+      showNotification(message, isCurrentlyBlocked ? 'success' : 'warning');
+      
+      // Перерисовываем таблицу
+      renderTable();
+    });
+  });
+}
+
+// --- Показ уведомлений ---
+function showNotification(message, type = 'info') {
+  // Удаляем существующие уведомления
+  const existingNotification = document.querySelector('.notification');
+  if (existingNotification) {
+    existingNotification.remove();
+  }
+  
+  const notification = document.createElement('div');
+  notification.className = `notification notification-${type}`;
+  notification.textContent = message;
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: ${type === 'success' ? '#4caf50' : type === 'warning' ? '#ff9800' : '#2196f3'};
+    color: white;
+    padding: 12px 20px;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    z-index: 1000;
+    font-size: 14px;
+    animation: slideIn 0.3s ease;
+  `;
+  
+  // Добавляем CSS анимацию
+  if (!document.querySelector('#notification-styles')) {
+    const style = document.createElement('style');
+    style.id = 'notification-styles';
+    style.textContent = `
+      @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+      @keyframes slideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  
+  document.body.appendChild(notification);
+  
+  // Автоматически скрываем через 3 секунды
+  setTimeout(() => {
+    if (notification.parentNode) {
+      notification.style.animation = 'slideOut 0.3s ease';
+      setTimeout(() => notification.remove(), 300);
+    }
+  }, 3000);
+}
+
 // --- Отрисовка таблицы ---
 function renderTable() {
   const sitesBody = document.getElementById('sitesBody');
@@ -50,7 +154,7 @@ function renderTable() {
 
   const siteEntries = Object.entries(sitesData);
   if (siteEntries.length === 0) {
-    sitesBody.innerHTML = '<tr><td colspan="4" class="no-data">No data yet</td></tr>';
+    sitesBody.innerHTML = '<tr><td colspan="5" class="no-data">No data yet</td></tr>';
     return;
   }
 
@@ -68,19 +172,48 @@ function renderTable() {
     const row = document.createElement('tr');
     const progressPercentage = maxTime > 0 ? (data.time / maxTime) * 100 : 0;
     if (domain === activeDomain) row.classList.add('active-row');
+
+    // Проверяем, заблокирован ли сайт
+    const isBlocked = (window.blockedSites || []).includes(domain);
+    const blockBtnClass = isBlocked ? 'block-btn blocked' : 'block-btn unblocked';
+    const blockBtnEmoji = isBlocked ? '🔓' : '🔒';
+    const blockBtnTitle = isBlocked ? 'Разблокировать сайт' : 'Заблокировать сайт';
+    
+    console.log(`Rendering row for ${domain}, blocked: ${isBlocked}, emoji: ${blockBtnEmoji}`);
+
     row.innerHTML = `
       <td>
-        <img src="${data.favicon}" width="16" height="16" onerror="this.src='data:image/svg+xml;base64,...'">
+        <img src="${data.favicon}" width="16" height="16" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjE2IiBoZWlnaHQ9IjE2IiBmaWxsPSIjNjY2NjY2Ii8+Cjx0ZXh0IHg9IjgiIHk9IjEyIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj5XPC90ZXh0Pgo8L3N2Zz4K'">
       </td>
-      <td>${domain}</td>
+      <td class="site-cell" title="${domain}">${domain}</td>
       <td class="progress-cell">
         <div class="progress-bar-container">
           <div class="progress-bar" style="width: ${progressPercentage}%;"></div>
         </div>
       </td>
       <td id="time-${domain}" class="time-cell">${formatTime(data.time)}</td>
+      <td class="block-cell">
+        <button class="${blockBtnClass}" 
+                data-domain="${domain}" 
+                title="${blockBtnTitle}">
+          ${blockBtnEmoji}
+        </button>
+      </td>
     `;
+    
     sitesBody.appendChild(row);
+    
+    // Добавляем обработчик события для кнопки блокировки
+    const blockBtn = row.querySelector('.block-btn');
+    if (blockBtn) {
+      blockBtn.addEventListener('click', () => {
+        console.log(`Button clicked for domain: ${domain}`);
+        toggleSiteBlock(domain);
+      });
+      console.log(`Event listener added for ${domain}`);
+    } else {
+      console.error(`Button not found for domain: ${domain}`);
+    }
   });
 
   // Пагинация
@@ -102,9 +235,22 @@ function renderTable() {
 // --- Инициализация ---
 document.addEventListener('DOMContentLoaded', () => {
   const resetBtn = document.getElementById('resetBtn');
+  const openOptionsBtn = document.getElementById('openOptionsBtn');
 
   // Уведомляем background.js, что попап открыт
   chrome.runtime.connect({ name: "popup" });
+
+  // Кнопка открытия страницы настроек/тестов
+  if (openOptionsBtn) {
+    openOptionsBtn.addEventListener('click', () => {
+      if (chrome.runtime.openOptionsPage) {
+        chrome.runtime.openOptionsPage();
+      } else {
+        const url = chrome.runtime.getURL('test.html');
+        window.open(url);
+      }
+    });
+  }
 
   // Загрузка данных при открытии попапа
   loadData();

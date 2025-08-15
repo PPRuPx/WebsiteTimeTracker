@@ -5,7 +5,7 @@
   <title>Website Time Tracker</title>
   <style>
     body {
-      width: 400px;
+      width: 450px;
       padding: 15px 15px 50px 15px;
       font-family: Arial, sans-serif;
       font-size: 14px;
@@ -22,6 +22,21 @@
       z-index: 20;
       padding: 10px 0;
     }
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 8px 0 12px 0;
+    }
+    .small-btn {
+      padding: 6px 10px;
+      background-color: #f1f3f4;
+      border: 1px solid #dadce0;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .small-btn:hover { background-color: #e8eaed; }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -34,11 +49,36 @@
     }
     th {
       background-color: #f5f5f5;
+      font-weight: 600;
+      color: #333;
     }
     .time-cell {
       font-family: monospace;
       min-width: 80px;
     }
+    .block-cell {
+      width: 50px;
+      text-align: center;
+    }
+    .block-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 4px;
+      border-radius: 4px;
+      transition: background-color 0.2s;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .block-btn:hover { background-color: #f0f0f0; }
+    .block-btn.blocked { background-color: #ffebee; }
+    .block-btn.blocked:hover { background-color: #ffcdd2; }
+    .block-btn.unblocked { background-color: #e8f5e8; }
+    .block-btn.unblocked:hover { background-color: #c8e6c9; }
     #resetBtn {
       padding: 6px 12px;
       background-color: #f1f3f4;
@@ -55,49 +95,31 @@
       border-bottom-left-radius: 0;
       border-bottom-right-radius: 0;
     }
-    #resetBtn:hover {
-      background-color: #e8eaed;
-    }
-    .no-data {
-      text-align: center;
-      padding: 20px;
-      color: #777;
-    }
-    .active-row {
-      background-color: #c7e6ff !important;
-    }
-    .progress-bar-container {
-      width: 100px;
-      height: 10px;
-      background-color: #e0e0e0;
-      border-radius: 5px;
-      overflow: hidden;
-      margin: 5px 0;
-    }
-    .progress-bar {
-      height: 100%;
-      background-color: #76c7c0;
-      border-radius: 5px;
-      transition: width 0.3s ease;
-    }
-    .progress-cell {
-      width: 100px;
-      min-width: 100px;
-      max-width: 100px;
-    }
+    #resetBtn:hover { background-color: #e8eaed; }
+    .no-data { text-align: center; padding: 20px; color: #777; }
+    .active-row { background-color: #c7e6ff !important; }
+    .progress-bar-container { width: 100px; height: 10px; background-color: #e0e0e0; border-radius: 5px; overflow: hidden; margin: 5px 0; }
+    .progress-bar { height: 100%; background-color: #76c7c0; border-radius: 5px; transition: width 0.3s ease; }
+    .progress-cell { width: 100px; min-width: 100px; max-width: 100px; }
+    .site-cell { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   </style>
 </head>
 <body>
   <h2>Website Time Tracker</h2>
+  <div class="toolbar">
+    <button id="openOptionsBtn" class="small-btn">Open Tester (Options)</button>
+    <span></span>
+  </div>
   <table id="sitesTable">
-    <!-- <thead>
+    <thead>
       <tr>
         <th></th>
         <th>Website</th>
         <th>Progress</th>
         <th>Time Spent</th>
+        <th>Block</th>
       </tr>
-    </thead> -->
+    </thead>
     <tbody id="sitesBody"></tbody>
   </table>
   <div id="pagination" style="text-align:center; margin: 10px 0;"></div>

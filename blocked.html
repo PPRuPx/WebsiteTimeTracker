@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Сайт заблокирован</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background-attachment: fixed;
+      background-size: cover;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      overflow: hidden;
+    }
+    
+    .container {
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      text-align: center;
+      max-width: 500px;
+      margin: 20px;
+      position: relative;
+      z-index: 10;
+    }
+    
+    .icon {
+      font-size: 4em;
+      margin-bottom: 20px;
+    }
+    
+    h1 {
+      font-size: 2em;
+      color: #d32f2f;
+      margin-bottom: 20px;
+      font-weight: 600;
+    }
+    
+    .message {
+      color: #666;
+      font-size: 1.1em;
+      line-height: 1.6;
+      margin-bottom: 30px;
+    }
+    
+    .stats {
+      background: #f5f5f5;
+      padding: 20px;
+      border-radius: 10px;
+      margin: 20px 0;
+    }
+    
+    .stats h3 {
+      color: #333;
+      margin-bottom: 15px;
+    }
+    
+    .time-spent {
+      font-size: 1.5em;
+      color: #2196f3;
+      font-weight: bold;
+      min-height: 1.5em;
+    }
+    
+    .unblock-btn {
+      background: #d32f2f;
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 25px;
+      font-size: 1.1em;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin: 10px;
+    }
+    
+    .unblock-btn:hover {
+      background: #b71c1c;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(211, 47, 47, 0.3);
+    }
+    
+    .back-btn {
+      background: #ff9800;
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 25px;
+      font-size: 1.1em;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin: 10px;
+    }
+    
+    .back-btn:hover {
+      background: #f57c00;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(255, 152, 0, 0.3);
+    }
+    
+    .footer {
+      margin-top: 30px;
+      color: #999;
+      font-size: 0.9em;
+    }
+    
+    /* Дополнительный фон для устранения швов */
+    .bg-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background-attachment: fixed;
+      background-size: cover;
+      z-index: -1;
+    }
+    
+    /* Анимация для статистики */
+    .loading {
+      color: #999;
+      font-style: italic;
+    }
+    
+    .error {
+      color: #d32f2f;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-overlay"></div>
+  <div class="container">
+    <div class="icon">🚫</div>
+    <h1>Сайт заблокирован</h1>
+    <div class="message">
+      Извини, но ты сам попросил заблокировать этот сайт! 😅<br><br>
+      Если передумал, можешь разблокировать его или вернуться к предыдущей странице.
+    </div>
+    
+    <div class="stats">
+      <h3>Статистика использования</h3>
+      <div class="time-spent" id="timeSpent">Загрузка...</div>
+    </div>
+    
+    <div>
+      <button class="unblock-btn" id="btnUnblock">🔓 Разблокировать сайт</button>
+      <button class="back-btn" id="btnBack">⬅️ Назад</button>
+    </div>
+    
+    <div class="footer">
+      Website Time Tracker - Контролируйте свое время в интернете
+    </div>
+  </div>
+
+  <script src="blocked.js"></script>
+</body>
+</html>
