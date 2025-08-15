@@ -147,14 +147,14 @@ function showNotification(message, type = 'info') {
 
 // --- Отрисовка таблицы ---
 function renderTable() {
-  const sitesBody = document.getElementById('sitesBody');
+  const sitesContainer = document.getElementById('sitesContainer');
   const pagination = document.getElementById('pagination');
-  sitesBody.innerHTML = '';
+  sitesContainer.innerHTML = '';
   pagination.innerHTML = '';
 
   const siteEntries = Object.entries(sitesData);
   if (siteEntries.length === 0) {
-    sitesBody.innerHTML = '<tr><td colspan="5" class="no-data">No data yet</td></tr>';
+    sitesContainer.innerHTML = '<div class="no-data">No data yet</div>';
     return;
   }
 
@@ -169,9 +169,8 @@ function renderTable() {
   const maxTime = Math.max(...sortedSites.map(([, data]) => data.time));
 
   pageSites.forEach(([domain, data]) => {
-    const row = document.createElement('tr');
     const progressPercentage = maxTime > 0 ? (data.time / maxTime) * 100 : 0;
-    if (domain === activeDomain) row.classList.add('active-row');
+    const isActive = domain === activeDomain;
 
     // Проверяем, заблокирован ли сайт
     const isBlocked = (window.blockedSites || []).includes(domain);
@@ -179,32 +178,35 @@ function renderTable() {
     const blockBtnEmoji = isBlocked ? '🔓' : '🔒';
     const blockBtnTitle = isBlocked ? 'Разблокировать сайт' : 'Заблокировать сайт';
     
-    console.log(`Rendering row for ${domain}, blocked: ${isBlocked}, emoji: ${blockBtnEmoji}`);
+    console.log(`Rendering card for ${domain}, blocked: ${isBlocked}, emoji: ${blockBtnEmoji}`);
 
-    row.innerHTML = `
-      <td>
-        <img src="${data.favicon}" width="16" height="16" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjE2IiBoZWlnaHQ9IjE2IiBmaWxsPSIjNjY2NjY2Ii8+Cjx0ZXh0IHg9IjgiIHk9IjEyIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj5XPC90ZXh0Pgo8L3N2Zz4K'">
-      </td>
-      <td class="site-cell" title="${domain}">${domain}</td>
-      <td class="progress-cell">
-        <div class="progress-bar-container">
-          <div class="progress-bar" style="width: ${progressPercentage}%;"></div>
+    const siteCard = document.createElement('div');
+    siteCard.className = `site-card${isActive ? ' active' : ''}`;
+    
+    siteCard.innerHTML = `
+      <div class="site-favicon">
+        <img src="${data.favicon}" width="20" height="20" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjIwIiBoZWlnaHQ9IjIwIiBmaWxsPSIjNjY2NjY2Ii8+Cjx0ZXh0IHg9IjEwIiB5PSIxNSIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iMTIiPk88L3RleHQ+Cjwvc3ZnPgo='">
+      </div>
+      <div class="site-info">
+        <div class="site-domain" title="${domain}">${domain}</div>
+        <div class="site-progress">
+          <div class="site-progress-bar" style="width: ${progressPercentage}%;"></div>
         </div>
-      </td>
-      <td id="time-${domain}" class="time-cell">${formatTime(data.time)}</td>
-      <td class="block-cell">
+        <div class="site-time" id="time-${domain}">${formatTime(data.time)}</div>
+      </div>
+      <div class="site-block">
         <button class="${blockBtnClass}" 
                 data-domain="${domain}" 
                 title="${blockBtnTitle}">
           ${blockBtnEmoji}
         </button>
-      </td>
+      </div>
     `;
     
-    sitesBody.appendChild(row);
+    sitesContainer.appendChild(siteCard);
     
     // Добавляем обработчик события для кнопки блокировки
-    const blockBtn = row.querySelector('.block-btn');
+    const blockBtn = siteCard.querySelector('.block-btn');
     if (blockBtn) {
       blockBtn.addEventListener('click', () => {
         console.log(`Button clicked for domain: ${domain}`);
@@ -221,7 +223,6 @@ function renderTable() {
     for (let i = 1; i <= totalPages; i++) {
       const btn = document.createElement('button');
       btn.textContent = i;
-      btn.style.margin = '0 2px';
       btn.disabled = i === currentPage;
       btn.onclick = () => {
         currentPage = i;

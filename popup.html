@@ -7,20 +7,22 @@
     body {
       width: 450px;
       padding: 15px 15px 50px 15px;
-      font-family: Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
       font-size: 14px;
+      background: #fff;
     }
     h2 {
       margin-top: 0;
       color: #1a73e8;
-      font-size: 18px;
+      font-size: 22px;
       text-align: center;
-      font-weight: normal;
+      font-weight: 700;
       position: sticky;
       top: 0;
       background: #fff;
       z-index: 20;
       padding: 10px 0;
+      letter-spacing: -0.5px;
     }
     .toolbar {
       display: flex;
@@ -37,71 +39,178 @@
       font-size: 12px;
     }
     .small-btn:hover { background-color: #e8eaed; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
+    
+    /* Modern card-based layout */
+    .sites-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
       margin: 10px 0;
     }
-    th, td {
-      padding: 8px;
-      text-align: left;
-      border-bottom: 1px solid #ddd;
+    
+    .site-card {
+      display: flex;
+      align-items: center;
+      background: #fff;
+      border: 1px solid #e8eaed;
+      border-radius: 12px;
+      padding: 12px;
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
     }
-    th {
-      background-color: #f5f5f5;
-      font-weight: 600;
-      color: #333;
+    
+    .site-card:hover {
+      border-color: #dadce0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      transform: translateY(-1px);
     }
-    .time-cell {
-      font-family: monospace;
-      min-width: 80px;
+    
+    .site-card.active {
+      border-color: #1a73e8;
+      background-color: #f8f9ff;
     }
-    .block-cell {
-      width: 50px;
-      text-align: center;
+    
+    .site-favicon {
+      width: 20px;
+      height: 20px;
+      margin-right: 12px;
+      flex-shrink: 0;
     }
+    
+    .site-info {
+      flex: 1;
+      min-width: 0;
+      margin-right: 12px;
+    }
+    
+    .site-domain {
+      font-weight: 500;
+      color: #202124;
+      margin-bottom: 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .site-progress {
+      width: 100%;
+      height: 6px;
+      background-color: #e8eaed;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 4px;
+    }
+    
+    .site-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #34a853, #1a73e8);
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+    
+    .site-time {
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+      font-size: 12px;
+      color: #5f6368;
+      font-weight: 500;
+    }
+    
+    .site-block {
+      flex-shrink: 0;
+    }
+    
     .block-btn {
       background: none;
       border: none;
       cursor: pointer;
       font-size: 16px;
-      padding: 4px;
-      border-radius: 4px;
-      transition: background-color 0.2s;
+      padding: 8px;
+      border-radius: 8px;
+      transition: all 0.2s ease;
       width: 32px;
       height: 32px;
       display: flex;
       align-items: center;
       justify-content: center;
     }
-    .block-btn:hover { background-color: #f0f0f0; }
-    .block-btn.blocked { background-color: #ffebee; }
-    .block-btn.blocked:hover { background-color: #ffcdd2; }
-    .block-btn.unblocked { background-color: #e8f5e8; }
-    .block-btn.unblocked:hover { background-color: #c8e6c9; }
-    #resetBtn {
-      padding: 6px 12px;
+    
+    .block-btn:hover { 
       background-color: #f1f3f4;
-      border: 1px solid #dadce0;
-      border-radius: 4px;
-      cursor: pointer;
-      position: fixed;
-      left: 0;
-      bottom: 0;
-      width: 100%;
-      z-index: 10;
-      font-size: 14px;
-      box-sizing: border-box;
-      border-bottom-left-radius: 0;
-      border-bottom-right-radius: 0;
+      transform: scale(1.1);
     }
-    #resetBtn:hover { background-color: #e8eaed; }
-    .no-data { text-align: center; padding: 20px; color: #777; }
-    .active-row { background-color: #c7e6ff !important; }
-    .progress-bar-container { width: 100px; height: 10px; background-color: #e0e0e0; border-radius: 5px; overflow: hidden; margin: 5px 0; }
-    .progress-bar { height: 100%; background-color: #76c7c0; border-radius: 5px; transition: width 0.3s ease; }
-    .progress-cell { width: 100px; min-width: 100px; max-width: 100px; }
-    .site-cell { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    
+    .block-btn.blocked { 
+      background-color: #fce8e6;
+      color: #d93025;
+    }
+    
+    .block-btn.blocked:hover { 
+      background-color: #fad2cf;
+    }
+    
+    .block-btn.unblocked { 
+      background-color: #e6f4ea;
+      color: #137333;
+    }
+    
+    .block-btn.unblocked:hover { 
+      background-color: #ceead6;
+    }
+    
+    #resetBtn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #666;
+      text-decoration: underline;
+      font-size: 12px;
+      position: fixed;
+      left: 15px;
+      bottom: 15px;
+      width: auto;
+      z-index: 10;
+      box-sizing: border-box;
+      padding: 0;
+    }
+    
+    #resetBtn:hover { 
+      color: #333;
+      background: none;
+    }
+    
+    .no-data { 
+      text-align: center; 
+      padding: 40px 20px; 
+      color: #5f6368;
+      font-style: italic;
+    }
+    
+    .pagination {
+      text-align: center;
+      margin: 16px 0;
+    }
+    
+    .pagination button {
+      margin: 0 4px;
+      padding: 6px 12px;
+      border: 1px solid #dadce0;
+      background: #fff;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.2s ease;
+    }
+    
+    .pagination button:hover:not(:disabled) {
+      background: #f8f9fa;
+      border-color: #1a73e8;
+    }
+    
+    .pagination button:disabled {
+      background: #f1f3f4;
+      color: #9aa0a6;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -110,19 +219,10 @@
     <button id="openOptionsBtn" class="small-btn">Open Tester (Options)</button>
     <span></span>
   </div>
-  <table id="sitesTable">
-    <thead>
-      <tr>
-        <th></th>
-        <th>Website</th>
-        <th>Progress</th>
-        <th>Time Spent</th>
-        <th>Block</th>
-      </tr>
-    </thead>
-    <tbody id="sitesBody"></tbody>
-  </table>
-  <div id="pagination" style="text-align:center; margin: 10px 0;"></div>
+  <div class="sites-container" id="sitesContainer">
+    <!-- Sites will be rendered here -->
+  </div>
+  <div class="pagination" id="pagination"></div>
   <button id="resetBtn">Reset All Data</button>
   <script src="popup.js"></script>
 </body>
