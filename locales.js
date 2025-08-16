@@ -31,9 +31,9 @@ const locales = {
     lessThanMinute: "Less than a minute",
     hoursMinutes: "{hours}h {minutes}m",
     minutes: "{minutes} minutes",
-    unblockButton: "🔓 Unblock site",
-    unblocking: "⏳ Unblocking...",
-    unblocked: "✅ Unblocked!",
+    unblockButton: "Unblock site",
+    unblocking: "Unblocking...",
+    unblocked: "Unblocked!",
     footer: "Website Time Tracker",
     
     // Confirmations
@@ -78,9 +78,9 @@ const locales = {
     lessThanMinute: "Менее минуты",
     hoursMinutes: "{hours}ч {minutes}м",
     minutes: "{minutes} минут",
-    unblockButton: "🔓 Разблокировать сайт",
-    unblocking: "⏳ Разблокировка...",
-    unblocked: "✅ Разблокировано!",
+    unblockButton: "Разблокировать сайт",
+    unblocking: "Разблокировка...",
+    unblocked: "Разблокировано!",
     footer: "Website Time Tracker",
     
     // Confirmations
