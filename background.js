@@ -11,6 +11,9 @@ const originalUrlByTabId = {};
 // Подавление автоматического обновления правил при изменении storage
 let suppressStorageRuleUpdate = false;
 
+// Кэш заблокированных доменов для быстрого доступа
+let blockedDomainsCache = [];
+
 // --- Вспомогательные функции ---
 function getDomain(url) {
   try {
@@ -19,6 +22,20 @@ function getDomain(url) {
   } catch (e) {
     return null;
   }
+}
+
+function isDomainBlocked(domain) {
+  if (!domain) return false;
+  return blockedDomainsCache.some(d => {
+    // точное совпадение или поддомен
+    return domain === d || domain.endsWith('.' + d);
+  });
+}
+
+function updateBlockedDomainsCache() {
+  chrome.storage.local.get({ blocked: [] }, (data) => {
+    blockedDomainsCache = data.blocked || [];
+  });
 }
 
 function saveTime(domain, milliseconds) {
@@ -60,7 +77,7 @@ function updateWindowFocusState(windowId) {
   });
 }
 
-// --- Следим за исходными запросами к заблокированным доменам ---
+// --- Основная система блокировки через webRequest ---
 chrome.webRequest.onBeforeRequest.addListener(
   (details) => {
     if (details.type !== 'main_frame' || details.tabId < 0) return;
@@ -69,16 +86,56 @@ chrome.webRequest.onBeforeRequest.addListener(
     const requestedDomain = getDomain(requestedUrl);
     if (!requestedDomain) return;
 
-    chrome.storage.local.get({ blocked: [] }, (data) => {
-      const blocked = data.blocked || [];
-      const isBlocked = blocked.some(d => {
-        // точное совпадение или поддомен
-        return requestedDomain === d || requestedDomain.endsWith('.' + d);
+    // Проверяем, заблокирован ли домен
+    if (isDomainBlocked(requestedDomain)) {
+      originalUrlByTabId[details.tabId] = requestedUrl;
+      
+      // Сразу перенаправляем на страницу блокировки
+      const blockedUrl = chrome.runtime.getURL(`blocked.html?domain=${encodeURIComponent(requestedDomain)}`);
+      return { redirectUrl: blockedUrl };
+    }
+
+    // Дополнительная проверка через declarativeNetRequest (на всякий случай)
+    if (chrome.declarativeNetRequest) {
+      chrome.declarativeNetRequest.getDynamicRules((rules) => {
+        if (chrome.runtime.lastError) {
+          return;
+        }
+        const isBlockedByDeclarative = rules.some(rule => {
+          const urlFilter = rule.condition.urlFilter;
+          if (urlFilter.startsWith('||') && urlFilter.endsWith('^')) {
+            const domain = urlFilter.slice(2, -1);
+            return requestedDomain === domain || requestedDomain.endsWith('.' + domain);
+          }
+          return false;
+        });
+
+        if (isBlockedByDeclarative) {
+          originalUrlByTabId[details.tabId] = requestedUrl;
+        }
       });
-      if (isBlocked) {
-        originalUrlByTabId[details.tabId] = requestedUrl;
-      }
-    });
+    }
+  },
+  { urls: ["<all_urls>"] }
+);
+
+// Дополнительный обработчик для перехвата навигации через history API
+chrome.webRequest.onBeforeRequest.addListener(
+  (details) => {
+    // Проверяем только основные навигационные запросы
+    if (details.type !== 'main_frame' || details.tabId < 0) return;
+    
+    const requestedUrl = details.url;
+    const requestedDomain = getDomain(requestedUrl);
+    if (!requestedDomain) return;
+
+    // Дополнительная проверка для случаев, когда основной обработчик мог не сработать
+    if (isDomainBlocked(requestedDomain)) {
+      originalUrlByTabId[details.tabId] = requestedUrl;
+      
+      const blockedUrl = chrome.runtime.getURL(`blocked.html?domain=${encodeURIComponent(requestedDomain)}`);
+      return { redirectUrl: blockedUrl };
+    }
   },
   { urls: ["<all_urls>"] }
 );
@@ -105,32 +162,32 @@ function startTracking(tab) {
   currentDomain = domain;
   startTime = Date.now();
   currentTab = tab;
-
-  console.log(`Started tracking: ${currentDomain} at ${new Date(startTime).toISOString()}`);
 }
 
 // --- Обновление правил блокировок ---
 function updateBlockedSites() {
   if (suppressStorageRuleUpdate) {
-    console.log('updateBlockedSites: SUPPRESSED due to active unblock flow');
     return;
   }
   
-  console.log('updateBlockedSites: STARTING (suppressStorageRuleUpdate =', suppressStorageRuleUpdate, ')');
-  
   chrome.storage.local.get({ blocked: [] }, data => {
     const blockedDomains = data.blocked;
-    console.log('Blocked domains from storage:', blockedDomains);
+    
+    // Обновляем кэш заблокированных доменов
+    updateBlockedDomainsCache();
+    
+    // Проверяем доступность declarativeNetRequest API
+    if (!chrome.declarativeNetRequest) {
+      return;
+    }
     
     // Получаем все существующие правила
     chrome.declarativeNetRequest.getDynamicRules((rules) => {
       if (chrome.runtime.lastError) {
-        console.error('Error getting dynamic rules:', chrome.runtime.lastError);
         return;
       }
       
       const existingRuleIds = rules.map(rule => rule.id);
-      console.log('Existing rule IDs:', existingRuleIds);
       
       // Удаляем все существующие правила
       chrome.declarativeNetRequest.updateDynamicRules({
@@ -138,11 +195,8 @@ function updateBlockedSites() {
         addRules: []
       }, () => {
         if (chrome.runtime.lastError) {
-          console.error('Error removing existing rules:', chrome.runtime.lastError);
           return;
         }
-        
-        console.log('Removed existing rules');
         
         // После удаления добавляем новые правила
         if (blockedDomains.length > 0) {
@@ -161,20 +215,14 @@ function updateBlockedSites() {
             }
           }));
           
-          console.log('Adding new rules:', newRules);
-          
           chrome.declarativeNetRequest.updateDynamicRules({
             removeRuleIds: [],
             addRules: newRules
           }, () => {
             if (chrome.runtime.lastError) {
-              console.error('Error adding rules:', chrome.runtime.lastError);
-            } else {
-              console.log(`Successfully updated blocking rules for ${blockedDomains.length} domains:`, blockedDomains);
+              // Ошибка добавления правил
             }
           });
-        } else {
-          console.log('No domains to block, rules cleared');
         }
       });
     });
@@ -184,19 +232,69 @@ function updateBlockedSites() {
 // --- Обработчики событий Chrome ---
 chrome.tabs.onActivated.addListener((activeInfo) => {
   chrome.tabs.get(activeInfo.tabId, (tab) => {
-    if (tab) startTracking(tab);
+    if (tab) {
+      // Проверяем, не заблокирован ли сайт на активированной вкладке
+      if (tab.url) {
+        const domain = getDomain(tab.url);
+        if (domain && isDomainBlocked(domain)) {
+          const blockedUrl = chrome.runtime.getURL(`blocked.html?domain=${encodeURIComponent(domain)}`);
+          
+          // Перенаправляем на страницу блокировки
+          chrome.tabs.update(tab.id, { url: blockedUrl }, () => {
+            if (chrome.runtime.lastError) {
+              // Ошибка перенаправления
+            }
+          });
+          return;
+        }
+      }
+      
+      startTracking(tab);
+    }
   });
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  // Проверяем блокировку при изменении URL
+  if (changeInfo.url && tab.url) {
+    const domain = getDomain(tab.url);
+    if (domain && isDomainBlocked(domain)) {
+      const blockedUrl = chrome.runtime.getURL(`blocked.html?domain=${encodeURIComponent(domain)}`);
+      
+      // Перенаправляем на страницу блокировки
+      chrome.tabs.update(tabId, { url: blockedUrl }, () => {
+        if (chrome.runtime.lastError) {
+          // Ошибка перенаправления
+        }
+      });
+      return;
+    }
+  }
+  
   if (tabId === currentTab?.id && changeInfo.url) {
     startTracking(tab);
   }
 });
 
+// Перехватываем создание новых вкладок с заблокированными URL
+chrome.tabs.onCreated.addListener((tab) => {
+  if (tab.url) {
+    const domain = getDomain(tab.url);
+    if (domain && isDomainBlocked(domain)) {
+      const blockedUrl = chrome.runtime.getURL(`blocked.html?domain=${encodeURIComponent(domain)}`);
+      
+      // Перенаправляем на страницу блокировки
+      chrome.tabs.update(tab.id, { url: blockedUrl }, () => {
+        if (chrome.runtime.lastError) {
+          // Ошибка перенаправления
+        }
+      });
+    }
+  }
+});
+
 chrome.windows.onFocusChanged.addListener((windowId) => {
   if (isPopupOpen) {
-    console.log("Popup is open, ignoring focus change.");
     return;
   }
 });
@@ -204,18 +302,10 @@ chrome.windows.onFocusChanged.addListener((windowId) => {
 // Следим за изменениями в списке блокировок
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "local" && changes.blocked) {
-    console.log('=== storage.onChanged triggered ===');
-    console.log('Changes:', changes);
-    console.log('suppressStorageRuleUpdate =', suppressStorageRuleUpdate);
-    
     if (suppressStorageRuleUpdate) {
-      console.log('updateBlockedSites: SUPPRESSED due to active unblock flow');
       return;
     }
     
-    console.log('updateBlockedSites: PROCEEDING (suppressStorageRuleUpdate =', suppressStorageRuleUpdate, ')');
-    console.log('Old value:', changes.blocked.oldValue);
-    console.log('New value:', changes.blocked.newValue);
     updateBlockedSites();
   }
 });
@@ -238,10 +328,8 @@ setInterval(() => {
 chrome.runtime.onConnect.addListener((port) => {
   if (port.name === "popup") {
     isPopupOpen = true;
-    console.log("Popup opened");
     port.onDisconnect.addListener(() => {
       isPopupOpen = false;
-      console.log("Popup closed");
     });
   }
 });
@@ -251,9 +339,37 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
   if (tabs[0]) startTracking(tabs[0]);
 });
 
+// Функция для проверки всех открытых вкладок на предмет заблокированных сайтов
+function checkAllOpenTabs() {
+  chrome.tabs.query({}, (tabs) => {
+    if (chrome.runtime.lastError) {
+      return;
+    }
+    
+    tabs.forEach(tab => {
+      if (tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')) {
+        const domain = getDomain(tab.url);
+        if (domain && isDomainBlocked(domain)) {
+          const blockedUrl = chrome.runtime.getURL(`blocked.html?domain=${encodeURIComponent(domain)}`);
+          
+          // Перенаправляем на страницу блокировки
+          chrome.tabs.update(tab.id, { url: blockedUrl }, () => {
+            if (chrome.runtime.lastError) {
+              // Ошибка перенаправления
+            }
+          });
+        }
+      }
+    });
+  });
+}
+
 // Инициализируем правила блокировки при запуске
-console.log('Initializing Website Time Tracker...');
 updateBlockedSites();
+updateBlockedDomainsCache(); // Инициализируем кэш при запуске
+
+// Проверяем все открытые вкладки после инициализации
+setTimeout(checkAllOpenTabs, 1000);
 
 // --- API для страниц расширения ---
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -268,11 +384,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
   } else if (request.action === "getSiteStats") {
     // Данные для blocked.html
-    console.log('Getting site stats for domain:', request.domain);
-    
     chrome.storage.local.get({ sites: {} }, (data) => {
       if (chrome.runtime.lastError) {
-        console.error('Storage error in getSiteStats:', chrome.runtime.lastError);
         sendResponse({ success: false, error: chrome.runtime.lastError.message });
         return;
       }
@@ -280,14 +393,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       const domain = request.domain;
       if (data.sites && data.sites[domain]) {
         const timeSpent = data.sites[domain].time;
-        console.log(`Site stats for ${domain}: ${timeSpent}ms`);
         sendResponse({ 
           success: true, 
           timeSpent: timeSpent,
           domain: domain
         });
       } else {
-        console.log(`No stats found for domain: ${domain}`);
         sendResponse({ 
           success: false, 
           error: 'No data found',
@@ -299,52 +410,41 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   } else if (request.action === 'getOriginalBlockedUrl') {
     const tabId = sender?.tab?.id ?? null;
     const originalUrl = tabId != null ? originalUrlByTabId[tabId] : undefined;
-    console.log('getOriginalBlockedUrl -> tabId:', tabId, 'originalUrl:', originalUrl);
     sendResponse({ success: true, originalUrl: originalUrl || null, tabId });
   } else if (request.action === 'unblockAndOpen') {
     const domain = request.domain;
     const targetUrl = request.originalUrl || `https://${domain}`;
     const tabId = sender?.tab?.id ?? null;
-    console.log('=== unblockAndOpen START ===');
-    console.log('Request details:', { domain, targetUrl, tabId });
-    console.log('Current suppressStorageRuleUpdate:', suppressStorageRuleUpdate);
 
     // Устанавливаем флаг подавления
     suppressStorageRuleUpdate = true;
-    console.log('Set suppressStorageRuleUpdate = true');
 
     chrome.storage.local.get({ blocked: [] }, (data) => {
-      console.log('Current blocked sites from storage:', data.blocked);
       const blocked = (data.blocked || []).filter(d => d !== domain);
-      console.log('Filtered blocked sites (removed', domain, '):', blocked);
       
       chrome.storage.local.set({ blocked }, () => {
         if (chrome.runtime.lastError) {
-          console.error('Error saving unblocked sites:', chrome.runtime.lastError);
           suppressStorageRuleUpdate = false;
-          console.log('Reset suppressStorageRuleUpdate = false due to error');
           sendResponse({ success: false, error: chrome.runtime.lastError.message });
           return;
         }
 
-        console.log('Successfully saved updated blocked sites to storage');
-        console.log('Starting declarativeNetRequest rules update...');
-
         // Перестраиваем правила и после этого переходим на нужный URL
+        if (!chrome.declarativeNetRequest) {
+          suppressStorageRuleUpdate = false;
+          sendResponse({ success: false, error: 'declarativeNetRequest API not available' });
+          return;
+        }
+        
         chrome.declarativeNetRequest.getDynamicRules((rules) => {
-          console.log('Current dynamic rules:', rules);
           const existingRuleIds = rules.map(r => r.id);
-          console.log('Removing existing rule IDs:', existingRuleIds);
           
           chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: existingRuleIds, addRules: [] }, () => {
             if (chrome.runtime.lastError) {
-              console.error('Error removing existing rules:', chrome.runtime.lastError);
               suppressStorageRuleUpdate = false;
               sendResponse({ success: false, error: 'Failed to remove rules' });
               return;
             }
-            
-            console.log('Successfully removed existing rules');
             
             const newRules = blocked.map((d, i) => ({
               id: i + 1,
@@ -353,40 +453,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               condition: { urlFilter: `||${d}^`, resourceTypes: ['main_frame'] }
             }));
             
-            console.log('Adding new rules:', newRules);
-            
             chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [], addRules: newRules }, () => {
               if (chrome.runtime.lastError) {
-                console.error('Error adding new rules:', chrome.runtime.lastError);
                 suppressStorageRuleUpdate = false;
                 sendResponse({ success: false, error: 'Failed to add new rules' });
                 return;
               }
               
-              console.log('Successfully updated declarativeNetRequest rules');
-              console.log('Now updating tab URL to:', targetUrl);
-              
               if (tabId != null) {
                 delete originalUrlByTabId[tabId];
-                console.log('Deleted originalUrlByTabId for tabId:', tabId);
                 
                 chrome.tabs.update(tabId, { url: targetUrl }, () => {
                   if (chrome.runtime.lastError) {
-                    console.error('Error updating tab URL:', chrome.runtime.lastError);
-                  } else {
-                    console.log('Successfully updated tab URL to:', targetUrl);
+                    // Ошибка обновления вкладки
                   }
                   
                   // Снимаем флаг подавления ПОСЛЕ навигации
                   suppressStorageRuleUpdate = false;
-                  console.log('Reset suppressStorageRuleUpdate = false after navigation');
                   sendResponse({ success: true });
                 });
               } else {
-                console.log('No tabId provided, skipping tab update');
                 suppressStorageRuleUpdate = false;
-                console.log('Reset suppressStorageRuleUpdate = false (no tab update)');
-                sendResponse({ success: true });
+                sendResponse({ success: false, error: 'No tabId provided' });
               }
             });
           });
@@ -403,5 +491,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       isTracking: !!startTime,
       timestamp: Date.now()
     });
+  } else if (request.action === "checkAllTabs") {
+    // Принудительная проверка всех вкладок
+    checkAllOpenTabs();
+    sendResponse({ success: true, message: "Checking all open tabs for blocked sites" });
+  } else if (request.action === "getBlockedDomains") {
+    // Получить список заблокированных доменов
+    sendResponse({ success: true, blocked: blockedDomainsCache });
   }
 });

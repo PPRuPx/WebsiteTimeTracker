@@ -18,7 +18,7 @@
   "action": {
     "default_popup": "popup.html"
   },
-  "options_page": "test.html",
+
   "icons": {
     "16": "icon16.png",
     "48": "icon48.png",

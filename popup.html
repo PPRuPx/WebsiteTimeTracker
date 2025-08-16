@@ -6,39 +6,62 @@
   <style>
     body {
       width: 450px;
-      padding: 15px 15px 50px 15px;
+      height: 600px;
+      padding: 15px 15px 15px 15px;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
       font-size: 14px;
       background: #fff;
+      margin: 0;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
     }
     h2 {
       margin-top: 0;
+      margin-bottom: 0;
       color: #1a73e8;
       font-size: 22px;
       text-align: center;
       font-weight: 700;
-      position: sticky;
-      top: 0;
-      background: #fff;
-      z-index: 20;
-      padding: 10px 0;
       letter-spacing: -0.5px;
+      flex-shrink: 0;
     }
-    .toolbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin: 8px 0 12px 0;
-    }
-    .small-btn {
-      padding: 6px 10px;
-      background-color: #f1f3f4;
-      border: 1px solid #dadce0;
-      border-radius: 4px;
+    
+    .view-mode-indicator {
+      text-align: center;
+      margin-bottom: 0;
+      padding: 4px 16px;
       cursor: pointer;
-      font-size: 12px;
+      user-select: none;
+      transition: all 0.2s ease;
     }
-    .small-btn:hover { background-color: #e8eaed; }
+    
+    .view-mode-indicator:hover {
+      background: #f8f9fa;
+      border-radius: 6px;
+    }
+    
+    .view-mode-indicator span {
+      color: #1a73e8;
+      font-size: 12px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      text-decoration: underline;
+      text-decoration-color: transparent;
+      transition: text-decoration-color 0.2s ease;
+    }
+    
+    .view-mode-indicator:hover span {
+      text-decoration-color: #1a73e8;
+    }
+    
+    .view-mode-indicator #viewModeIcon {
+      font-size: 12px;
+      line-height: 1;
+    }
     
     /* Modern card-based layout */
     .sites-container {
@@ -46,6 +69,10 @@
       flex-direction: column;
       gap: 8px;
       margin: 10px 0;
+      padding-top: 2px;
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
     }
     
     .site-card {
@@ -57,17 +84,39 @@
       padding: 12px;
       transition: all 0.2s ease;
       box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+      flex-shrink: 0;
+      cursor: pointer;
+      user-select: none;
     }
     
-    /* .site-card:hover {
+    .site-card:hover {
       border-color: #dadce0;
       box-shadow: 0 2px 8px rgba(0,0,0,0.08);
       transform: translateY(-1px);
-    } */
+    }
     
     .site-card.active {
       border-color: #1a73e8;
       background-color: #f8f9ff;
+    }
+    
+    .site-card:active {
+      transform: scale(0.98);
+      transition: transform 0.1s ease;
+    }
+    
+    .site-card.blocked {
+      opacity: 0.7;
+      background-color: #f8f9fa;
+    }
+    
+    .site-card.blocked .site-domain {
+      color: #5f6368;
+    }
+    
+    .site-card.blocked:hover {
+      opacity: 0.8;
+      background-color: #f1f3f4;
     }
     
     .site-favicon {
@@ -157,6 +206,47 @@
       background-color: #ceead6;
     }
     
+    .footer-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid #e8eaed;
+      flex-shrink: 0;
+    }
+    
+    .footer-buttons {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+    }
+    
+    .sites-per-page {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .sites-per-page label {
+      font-size: 12px;
+      color: #5f6368;
+      font-weight: 500;
+    }
+    
+    .sites-per-page select {
+      padding: 4px 8px;
+      border: 1px solid #dadce0;
+      border-radius: 4px;
+      font-size: 12px;
+      background: #fff;
+      cursor: pointer;
+    }
+    
+    .sites-per-page select:hover {
+      border-color: #1a73e8;
+    }
+    
     #resetBtn {
       background: none;
       border: none;
@@ -164,18 +254,11 @@
       color: #666;
       text-decoration: underline;
       font-size: 12px;
-      position: fixed;
-      left: 15px;
-      bottom: 15px;
-      width: auto;
-      z-index: 10;
-      box-sizing: border-box;
       padding: 0;
     }
     
-    #resetBtn { 
+    #resetBtn:hover { 
       color: #333;
-      background: none;
     }
     
     .no-data { 
@@ -187,7 +270,8 @@
     
     .pagination {
       text-align: center;
-      margin: 16px 0;
+      margin: 8px 0;
+      flex-shrink: 0;
     }
     
     .pagination button {
@@ -211,19 +295,47 @@
       color: #9aa0a6;
       cursor: not-allowed;
     }
+    
+    /* Анимации для уведомлений */
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    
+    @keyframes slideOut {
+      from { transform: translateX(0); opacity: 1; }
+      to { transform: translateX(100%); opacity: 0; }
+    }
   </style>
 </head>
 <body>
   <h2>Website Time Tracker</h2>
-  <!-- <div class="toolbar">
-    <button id="openOptionsBtn" class="small-btn">Open Tester (Options)</button>
-    <span></span>
-  </div> -->
+  <div class="view-mode-indicator" id="viewModeIndicator">
+    <span id="viewModeIndicatorText">
+      <span id="viewModeIcon">👁️</span>
+      Просмотр всех сайтов
+    </span>
+  </div>
   <div class="sites-container" id="sitesContainer">
     <!-- Sites will be rendered here -->
   </div>
   <div class="pagination" id="pagination"></div>
-  <button id="resetBtn">Reset All Data</button>
+  <div class="footer-controls">
+    <div class="sites-per-page">
+      <label for="sitesPerPageSelect">Sites per page:</label>
+      <select id="sitesPerPageSelect">
+        <option value="5">5</option>
+        <option value="10">10</option>
+        <option value="25">25</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+        <option value="all">All</option>
+      </select>
+    </div>
+    <div class="footer-buttons">
+      <button id="resetBtn">Reset All Data</button>
+    </div>
+  </div>
   <script src="popup.js"></script>
 </body>
 </html>
