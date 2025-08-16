@@ -296,6 +296,36 @@
       cursor: not-allowed;
     }
     
+    .locale-text-button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      transition: background-color 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .locale-text-button:hover { 
+      background-color: #f8f9fa;
+    }
+    
+    /* Стили для изображений флагов */
+    .locale-text-button img {
+      border-radius: 3px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+    }
+    
+    .locale-text-button:hover img {
+      transform: scale(1.15);
+      box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+    }
+    
     /* Анимации для уведомлений */
     @keyframes slideIn {
       from { transform: translateX(100%); opacity: 0; }
@@ -309,11 +339,11 @@
   </style>
 </head>
 <body>
-  <h2>Website Time Tracker</h2>
+  <h2 id="title">Website Time Tracker</h2>
   <div class="view-mode-indicator" id="viewModeIndicator">
     <span id="viewModeIndicatorText">
       <span id="viewModeIcon">👁️</span>
-      Просмотр всех сайтов
+      <span id="viewModeText">View all sites</span>
     </span>
   </div>
   <div class="sites-container" id="sitesContainer">
@@ -322,7 +352,7 @@
   <div class="pagination" id="pagination"></div>
   <div class="footer-controls">
     <div class="sites-per-page">
-      <label for="sitesPerPageSelect">Sites per page:</label>
+      <label for="sitesPerPageSelect" id="sitesPerPageLabel">Sites per page:</label>
       <select id="sitesPerPageSelect">
         <option value="5">5</option>
         <option value="10">10</option>
@@ -334,8 +364,12 @@
     </div>
     <div class="footer-buttons">
       <button id="resetBtn">Reset All Data</button>
+      <button id="localeToggle" class="locale-text-button" title="Switch language">
+        <img src="flags/gb.svg" alt="British Flag" style="width: 24px; height: 16px; vertical-align: middle;">
+      </button>
     </div>
   </div>
+  <script src="locales.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

@@ -5,6 +5,81 @@ let currentPage = 1;
 let sitesPerPage = 5;
 let viewMode = 'all'; // 'all' или 'blocked'
 
+// Функция для применения локализации ко всем элементам
+function applyLocalization() {
+  // Заголовок
+  const titleElement = document.getElementById('title');
+  if (titleElement) {
+    titleElement.textContent = localeUtils.t('title');
+  }
+  
+  // Индикатор режима просмотра
+  updateViewModeText();
+  
+  // Лейбл для селектора количества сайтов
+  const sitesPerPageLabel = document.getElementById('sitesPerPageLabel');
+  if (sitesPerPageLabel) {
+    sitesPerPageLabel.textContent = localeUtils.t('sitesPerPage');
+  }
+  
+  // Кнопка сброса
+  const resetBtn = document.getElementById('resetBtn');
+  if (resetBtn) {
+    resetBtn.textContent = localeUtils.t('resetAllData');
+  }
+  
+  // Кнопка переключения языка
+  const localeToggle = document.getElementById('localeToggle');
+  if (localeToggle) {
+    const currentLocale = localeUtils.getCurrentLocale();
+    const flagMap = {
+      'en': 'flags/gb.svg',
+      'ru': 'flags/ru.svg'
+    };
+    const flagPath = flagMap[currentLocale] || 'flags/gb.svg';
+    
+    // Очищаем содержимое и добавляем изображение флага
+    localeToggle.innerHTML = '';
+    const flagImg = document.createElement('img');
+    flagImg.src = flagPath;
+    let flagAlt;
+    if (currentLocale === 'en') {
+      flagAlt = 'British Flag';
+    } else {
+      flagAlt = 'Russian Flag';
+    }
+    flagImg.alt = flagAlt;
+    flagImg.style.width = '24px';
+    flagImg.style.height = '16px';
+    flagImg.style.verticalAlign = 'middle';
+    localeToggle.appendChild(flagImg);
+    
+    let nextLanguageTitle;
+    if (currentLocale === 'en') {
+      nextLanguageTitle = localeUtils.t('switchToRussian');
+    } else {
+      nextLanguageTitle = localeUtils.t('switchToEnglish');
+    }
+    localeToggle.title = nextLanguageTitle;
+  }
+  
+  // Обновляем заголовки кнопок блокировки для всех существующих карточек
+  updateBlockButtonsTitles();
+}
+
+// Функция для обновления заголовков кнопок блокировки
+function updateBlockButtonsTitles() {
+  const blockButtons = document.querySelectorAll('.block-btn');
+  blockButtons.forEach(button => {
+    const isBlocked = button.classList.contains('blocked');
+    if (isBlocked) {
+      button.title = localeUtils.t('unblockSite');
+    } else {
+      button.title = localeUtils.t('blockSite');
+    }
+  });
+}
+
 window.blockedSites = [];
 chrome.storage.local.get({ blocked: [] }, data => {
   window.blockedSites = data.blocked;
@@ -165,6 +240,18 @@ function updateSiteTime(domain, totalTime) {
   }
 }
 
+// --- Функция для обновления текста режима просмотра ---
+function updateViewModeText() {
+  const viewModeText = document.getElementById('viewModeText');
+  if (viewModeText) {
+    if (viewMode === 'all') {
+      viewModeText.textContent = localeUtils.t('viewAllSites');
+    } else {
+      viewModeText.textContent = localeUtils.t('viewBlockedSites');
+    }
+  }
+}
+
 // --- Функция переключения режима просмотра ---
 function toggleViewMode() {
   viewMode = viewMode === 'all' ? 'blocked' : 'all';
@@ -174,6 +261,9 @@ function toggleViewMode() {
   if (viewModeIcon) {
     viewModeIcon.textContent = viewMode === 'all' ? '👁️' : '🚫';
   }
+  
+  // Обновляем текст режима
+  updateViewModeText();
   
   // Сбрасываем на первую страницу при смене режима
   currentPage = 1;
@@ -204,7 +294,9 @@ function toggleSiteBlock(domain) {
       window.blockedSites = blocked;
       
       // Показываем уведомление
-      const message = isCurrentlyBlocked ? `Site ${domain} unblocked` : `Site ${domain} blocked`;
+      const message = isCurrentlyBlocked 
+        ? localeUtils.t('siteUnblocked', { domain }) 
+        : localeUtils.t('siteBlocked', { domain });
       showNotification(message, isCurrentlyBlocked ? 'success' : 'warning');
       
       // Обновляем класс blocked у карточки и кнопки
@@ -222,11 +314,11 @@ function toggleSiteBlock(domain) {
           if (isCurrentlyBlocked) {
             blockBtn.className = 'block-btn unblocked';
             blockBtn.textContent = '🔒';
-            blockBtn.title = 'Заблокировать сайт';
+            blockBtn.title = localeUtils.t('blockSite');
           } else {
             blockBtn.className = 'block-btn blocked';
             blockBtn.textContent = '🔓';
-            blockBtn.title = 'Разблокировать сайт';
+            blockBtn.title = localeUtils.t('unblockSite');
           }
         }
       }
@@ -290,7 +382,7 @@ function renderTable() {
 
   const siteEntries = Object.entries(sitesData);
   if (siteEntries.length === 0) {
-    sitesContainer.innerHTML = '<div class="no-data">No data yet</div>';
+    sitesContainer.innerHTML = `<div class="no-data">${localeUtils.t('noData')}</div>`;
     return;
   }
 
@@ -308,9 +400,9 @@ function renderTable() {
   // Проверяем, есть ли сайты после фильтрации
   if (filteredSites.length === 0) {
     if (viewMode === 'blocked') {
-      sitesContainer.innerHTML = '<div class="no-data">Нет заблокированных сайтов</div>';
+      sitesContainer.innerHTML = `<div class="no-data">${localeUtils.t('noBlockedSites')}</div>`;
     } else {
-      sitesContainer.innerHTML = '<div class="no-data">No data yet</div>';
+      sitesContainer.innerHTML = `<div class="no-data">${localeUtils.t('noData')}</div>`;
     }
     pagination.innerHTML = '';
     return;
@@ -337,9 +429,9 @@ function renderTable() {
     const totalSites = filteredSites.length;
     
     if (viewMode === 'all') {
-      viewModeIndicatorText.innerHTML = `<span id="viewModeIcon">👁️</span>Просмотр всех сайтов (${totalSites})`;
+      viewModeIndicatorText.innerHTML = `<span id="viewModeIcon">👁️</span><span id="viewModeText">${localeUtils.t('viewAllSites')} (${totalSites})</span>`;
     } else {
-      viewModeIndicatorText.innerHTML = `<span id="viewModeIcon">🚫</span>Просмотр только заблокированных сайтов (${totalSites})`;
+      viewModeIndicatorText.innerHTML = `<span id="viewModeIcon">🚫</span><span id="viewModeText">${localeUtils.t('viewBlockedSites')} (${totalSites})</span>`;
     }
   }
 
@@ -354,7 +446,7 @@ function renderTable() {
     const isBlocked = (window.blockedSites || []).includes(domain);
     const blockBtnClass = isBlocked ? 'block-btn blocked' : 'block-btn unblocked';
     const blockBtnEmoji = isBlocked ? '🔓' : '🔒';
-    const blockBtnTitle = isBlocked ? 'Разблокировать сайт' : 'Заблокировать сайт';
+    const blockBtnTitle = isBlocked ? localeUtils.t('unblockSite') : localeUtils.t('blockSite');
 
     const siteCard = document.createElement('div');
     siteCard.className = `site-card${isActive ? ' active' : ''}${isBlocked ? ' blocked' : ''}`;
@@ -464,6 +556,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (viewModeIndicator) {
     viewModeIndicator.addEventListener('click', toggleViewMode);
   }
+  
+  // Добавляем обработчик для кнопки переключения языка
+  const localeToggle = document.getElementById('localeToggle');
+  if (localeToggle) {
+    localeToggle.addEventListener('click', () => {
+      const currentLocale = localeUtils.getCurrentLocale();
+      const newLocale = currentLocale === 'en' ? 'ru' : 'en';
+      localeUtils.setLocale(newLocale);
+      // Применяем локализацию сразу после смены языка
+      applyLocalization();
+      // Перерендериваем таблицу для обновления динамических элементов
+      renderTable();
+    });
+  }
 
   // Уведомляем background.js, что попап открыт
   chrome.runtime.connect({ name: "popup" });
@@ -489,12 +595,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadData(); // Ждем загрузки данных
   updateActiveDomain();
   
+  // Применяем локализацию
+  applyLocalization();
+  
   // Рендерим таблицу после загрузки всех данных
   renderTable();
 
   // Сброс данных
   resetBtn.addEventListener('click', () => {
-    if (confirm('Reset all tracking data?')) {
+    if (confirm(localeUtils.t('confirmReset'))) {
       chrome.storage.local.set({ sites: {} }, () => {
         sitesData = {};
         renderTable();

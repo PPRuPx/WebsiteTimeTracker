@@ -26,7 +26,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["blocked.html"],
+      "resources": ["blocked.html", "locales.js"],
       "matches": ["<all_urls>"]
     }
   ]

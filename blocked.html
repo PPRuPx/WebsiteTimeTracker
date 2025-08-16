@@ -216,29 +216,30 @@
       <div class="icon">🚫</div>
     </div>
     
-    <h1>Сайт заблокирован</h1>
+    <h1 id="blockedTitle">Site is blocked</h1>
     
-    <div class="message">
-      Вы заблокировали этот сайт для контроля времени. Если передумали, можете разблокировать его.
+    <div class="message" id="blockedMessage">
+      You have blocked this site for time control. If you changed your mind, you can unblock it.
     </div>
     
     <div class="stats-card">
-      <div class="time-spent">Проведено времени:</div>
-      <div class="time-spent" id="timeSpent">Загрузка...</div>
+      <div class="time-spent" id="timeSpentLabel">Time spent:</div>
+      <div class="time-spent" id="timeSpent">Loading...</div>
     </div>
     
     <div class="buttons-container">
       <button class="btn btn-primary" id="btnUnblock">
         <span>🔓</span>
-        Разблокировать сайт
+        <span id="unblockButtonText">Unblock site</span>
       </button>
     </div>
     
-    <div class="footer">
+    <div class="footer" id="footer">
       Website Time Tracker
     </div>
   </div>
 
+  <script src="locales.js"></script>
   <script src="blocked.js"></script>
 </body>
 </html>

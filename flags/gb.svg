@@ -1,0 +1,22 @@
+<svg width="24" height="16" viewBox="0 0 24 16" xmlns="http://www.w3.org/2000/svg">
+  <!-- Синий фон -->
+  <rect width="24" height="16" fill="#012169"/>
+  
+  <!-- Белые диагональные полосы -->
+  <path d="M0,0 L24,16 M24,0 L0,16" stroke="#FFFFFF" stroke-width="2"/>
+  
+  <!-- Красные диагональные полосы -->
+  <path d="M0,0 L24,16 M24,0 L0,16" stroke="#C8102E" stroke-width="1"/>
+  
+  <!-- Белый крест по вертикали -->
+  <rect x="11" y="0" width="2" height="16" fill="#FFFFFF"/>
+  
+  <!-- Белый крест по горизонтали -->
+  <rect x="0" y="7" width="24" height="2" fill="#FFFFFF"/>
+  
+  <!-- Красный крест по вертикали -->
+  <rect x="11.5" y="0" width="1" height="16" fill="#C8102E"/>
+  
+  <!-- Красный крест по горизонтали -->
+  <rect x="0" y="7.5" width="24" height="1" fill="#C8102E"/>
+</svg>

@@ -4,6 +4,39 @@
   // DOM helpers
   function $(id) { return document.getElementById(id); }
 
+  // Функция для применения локализации
+  function applyLocalization() {
+    // Заголовок
+    const blockedTitle = $('blockedTitle');
+    if (blockedTitle) {
+      blockedTitle.textContent = localeUtils.t('siteBlockedTitle');
+    }
+    
+    // Сообщение
+    const blockedMessage = $('blockedMessage');
+    if (blockedMessage) {
+      blockedMessage.textContent = localeUtils.t('siteBlockedMessage');
+    }
+    
+    // Лейбл времени
+    const timeSpentLabel = $('timeSpentLabel');
+    if (timeSpentLabel) {
+      timeSpentLabel.textContent = localeUtils.t('timeSpent');
+    }
+    
+    // Кнопка разблокировки
+    const unblockButtonText = $('unblockButtonText');
+    if (unblockButtonText) {
+      unblockButtonText.textContent = localeUtils.t('unblockButton').replace('🔓 ', '');
+    }
+    
+    // Футер
+    const footer = $('footer');
+    if (footer) {
+      footer.textContent = localeUtils.t('footer');
+    }
+  }
+
   // Проверяем доступность Chrome Extension API
   function checkChromeAPI() {
     if (typeof chrome === 'undefined') {
@@ -27,14 +60,14 @@
     let domain = getDomainFromMultipleSources();
     
     if (!domain) {
-      $('timeSpent').textContent = 'Информация недоступна';
+      $('timeSpent').textContent = localeUtils.t('timeSpentNoData');
       $('timeSpent').className = 'time-spent error';
       return;
     }
     
     // Проверяем доступность Chrome API
     if (!checkChromeAPI()) {
-      $('timeSpent').textContent = 'Ошибка: Chrome Extension API недоступен';
+      $('timeSpent').textContent = localeUtils.t('timeSpentError');
       $('timeSpent').className = 'time-spent error';
       return;
     }
@@ -69,7 +102,7 @@
     
     chrome.storage.local.get({ sites: {}, blocked: [] }, (data) => {
       if (chrome.runtime.lastError) {
-        $('timeSpent').textContent = 'Ошибка загрузки данных';
+        $('timeSpent').textContent = localeUtils.t('timeSpentLoadError');
         $('timeSpent').className = 'time-spent error';
         return;
       }
@@ -87,7 +120,7 @@
           const timeSpent = data.sites[similarDomains[0]].time;
           displayTimeStats(similarDomains[0], timeSpent);
         } else {
-          $('timeSpent').textContent = 'Данные не найдены';
+          $('timeSpent').textContent = localeUtils.t('timeSpentNotFound');
           $('timeSpent').className = 'time-spent error';
         }
       }
@@ -97,7 +130,7 @@
   // Функция для отображения статистики времени
   function displayTimeStats(domain, timeSpent) {
     if (!timeSpent || timeSpent <= 0) {
-      $('timeSpent').textContent = 'Время не отслеживалось';
+      $('timeSpent').textContent = localeUtils.t('timeNotTracked');
       $('timeSpent').className = 'time-spent';
       return;
     }
@@ -107,11 +140,11 @@
     
     let timeText = '';
     if (hours > 0) {
-      timeText = `${hours}ч ${minutes}м`;
+      timeText = localeUtils.t('hoursMinutes', { hours, minutes });
     } else if (minutes > 0) {
-      timeText = `${minutes} минут`;
+      timeText = localeUtils.t('minutes', { minutes });
     } else {
-      timeText = 'Менее минуты';
+      timeText = localeUtils.t('lessThanMinute');
     }
     
     const timeElement = $('timeSpent');
@@ -165,8 +198,8 @@
     const domain = getDomainFromMultipleSources();
     
     const message = domain 
-      ? `Вы уверены, что хотите разблокировать сайт "${domain}"?`
-      : 'Вы уверены, что хотите разблокировать этот сайт?';
+      ? localeUtils.t('confirmUnblock', { domain })
+      : localeUtils.t('confirmUnblockGeneric');
     
     if (confirm(message)) {
       unblockSite();
@@ -176,7 +209,7 @@
   // Разблокировать сайт
   function unblockSite() {
     if (!checkChromeAPI()) {
-      alert('Ошибка: Chrome Extension API недоступен');
+      alert(localeUtils.t('timeSpentError'));
       return;
     }
     
@@ -190,7 +223,7 @@
     const btnUnblock = document.getElementById('btnUnblock');
     if (btnUnblock) {
       btnUnblock.disabled = true;
-      btnUnblock.innerHTML = '<span>⏳</span> Разблокировка...';
+      btnUnblock.innerHTML = `<span>⏳</span> ${localeUtils.t('unblocking')}`;
     }
     
     // Используем новую логику через background.js
@@ -220,7 +253,7 @@
         if (unblockResponse && unblockResponse.success) {
           // Background.js обработает навигацию, показываем сообщение об успехе
           if (btnUnblock) {
-            btnUnblock.innerHTML = '<span>✅</span> Разблокировано!';
+            btnUnblock.innerHTML = `<span>✅</span> ${localeUtils.t('unblocked')}`;
             btnUnblock.style.background = '#28a745';
           }
           
@@ -232,7 +265,7 @@
           // Fallback: просто перейти на https://domain
           if (btnUnblock) {
             btnUnblock.disabled = false;
-            btnUnblock.innerHTML = '<span>🔓</span> Разблокировать сайт';
+            btnUnblock.innerHTML = `<span>🔓</span> ${localeUtils.t('unblockButton').replace('🔓 ', '')}`;
           }
           window.location.href = originalUrl || `https://${domain}`;
         }
@@ -251,6 +284,9 @@
 
   // Bind events after DOM ready
   document.addEventListener('DOMContentLoaded', () => {
+    // Применяем локализацию
+    applyLocalization();
+    
     // Bind button events
     const btnUnblock = $('btnUnblock');
     const btnBack = $('btnBack');
