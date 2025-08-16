@@ -186,6 +186,13 @@
       return;
     }
     
+    // Показываем индикатор загрузки
+    const btnUnblock = document.getElementById('btnUnblock');
+    if (btnUnblock) {
+      btnUnblock.disabled = true;
+      btnUnblock.innerHTML = '<span>⏳</span> Разблокировка...';
+    }
+    
     // Используем новую логику через background.js
     chrome.runtime.sendMessage({
       action: 'getOriginalBlockedUrl'
@@ -211,9 +218,22 @@
         }
         
         if (unblockResponse && unblockResponse.success) {
-          // Background.js обработает навигацию, здесь ничего не делаем
+          // Background.js обработает навигацию, показываем сообщение об успехе
+          if (btnUnblock) {
+            btnUnblock.innerHTML = '<span>✅</span> Разблокировано!';
+            btnUnblock.style.background = '#28a745';
+          }
+          
+          // Небольшая задержка перед переходом
+          setTimeout(() => {
+            window.location.href = originalUrl || `https://${domain}`;
+          }, 500);
         } else {
           // Fallback: просто перейти на https://domain
+          if (btnUnblock) {
+            btnUnblock.disabled = false;
+            btnUnblock.innerHTML = '<span>🔓</span> Разблокировать сайт';
+          }
           window.location.href = originalUrl || `https://${domain}`;
         }
       });

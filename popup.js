@@ -15,7 +15,6 @@ function loadSettings() {
   return new Promise((resolve) => {
     chrome.storage.local.get({ sitesPerPage: 5 }, (data) => {
       sitesPerPage = data.sitesPerPage;
-      console.log('Loaded settings, sitesPerPage:', sitesPerPage);
       // Обновляем селектор, если он уже существует
       const select = document.getElementById('sitesPerPageSelect');
       if (select) {
@@ -32,7 +31,6 @@ function loadSettings() {
 
 // --- Сохранение настроек ---
 function saveSettings() {
-  console.log('Saving settings, sitesPerPage:', sitesPerPage);
   chrome.storage.local.set({ sitesPerPage: sitesPerPage });
 }
 
@@ -232,6 +230,13 @@ function toggleSiteBlock(domain) {
           }
         }
       }
+      
+      // Дополнительная проверка через background.js для разблокировки
+      if (isCurrentlyBlocked) {
+        chrome.runtime.sendMessage({
+          action: 'checkAllTabs'
+        });
+      }
     });
   });
 }
@@ -278,7 +283,6 @@ function showNotification(message, type = 'info') {
 
 // --- Рендеринг таблицы ---
 function renderTable() {
-  console.log('renderTable called with sitesPerPage:', sitesPerPage);
   const sitesContainer = document.getElementById('sitesContainer');
   const pagination = document.getElementById('pagination');
   sitesContainer.innerHTML = '';
@@ -319,14 +323,12 @@ function renderTable() {
     // Показываем все сайты на одной странице
     pageSites = filteredSites;
     currentPage = 1;
-    console.log(`Showing all ${viewMode === 'blocked' ? 'blocked' : ''} sites:`, pageSites.length);
   } else {
     // Обычная пагинация
     totalPages = Math.ceil(filteredSites.length / sitesPerPage);
     if (currentPage > totalPages) currentPage = totalPages || 1;
     const startIdx = (currentPage - 1) * sitesPerPage;
     pageSites = filteredSites.slice(startIdx, startIdx + sitesPerPage);
-    console.log(`Pagination: page ${currentPage}/${totalPages}, showing ${pageSites.length} ${viewMode === 'blocked' ? 'blocked' : ''} sites out of ${filteredSites.length}`);
   }
 
   // Обновляем индикатор режима просмотра с количеством сайтов
@@ -422,13 +424,11 @@ function handleSitesPerPageChange() {
   const select = document.getElementById('sitesPerPageSelect');
   if (select) {
     const value = select.value;
-    console.log('handleSitesPerPageChange called with value:', value);
     if (value === 'all') {
       sitesPerPage = 'all';
     } else {
       sitesPerPage = parseInt(value);
     }
-    console.log('Updated sitesPerPage to:', sitesPerPage);
     currentPage = 1; // Сбрасываем на первую страницу
     renderTable();
     saveSettings(); // Сохраняем настройки

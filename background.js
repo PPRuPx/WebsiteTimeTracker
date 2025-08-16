@@ -26,10 +26,20 @@ function getDomain(url) {
 
 function isDomainBlocked(domain) {
   if (!domain) return false;
-  return blockedDomainsCache.some(d => {
+  
+  // Дополнительная проверка через storage для надежности
+  const isBlocked = blockedDomainsCache.some(d => {
     // точное совпадение или поддомен
     return domain === d || domain.endsWith('.' + d);
   });
+  
+  // Если домен не найден в кэше, проверяем storage напрямую
+  if (!isBlocked && blockedDomainsCache.length === 0) {
+    // Синхронная проверка через storage (fallback)
+    return false;
+  }
+  
+  return isBlocked;
 }
 
 function updateBlockedDomainsCache() {
@@ -224,6 +234,9 @@ function updateBlockedSites() {
             }
           });
         }
+        
+        // Планируем обновление кэша после изменения правил
+        scheduleBlockCheck();
       });
     });
   });
@@ -275,6 +288,22 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     startTracking(tab);
   }
 });
+
+// Добавляем задержку для проверки блокировки после обновления правил
+let blockCheckTimeout = null;
+function scheduleBlockCheck() {
+  if (blockCheckTimeout) {
+    clearTimeout(blockCheckTimeout);
+  }
+  blockCheckTimeout = setTimeout(() => {
+    updateBlockedDomainsCache();
+    // Дополнительная проверка через storage
+    chrome.storage.local.get({ blocked: [] }, (data) => {
+      
+    });
+    blockCheckTimeout = null;
+  }, 500); // 500ms задержка для обновления кэша
+}
 
 // Перехватываем создание новых вкладок с заблокированными URL
 chrome.tabs.onCreated.addListener((tab) => {
@@ -460,18 +489,38 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 return;
               }
               
+              // Планируем обновление кэша
+              scheduleBlockCheck();
+              
               if (tabId != null) {
                 delete originalUrlByTabId[tabId];
                 
-                chrome.tabs.update(tabId, { url: targetUrl }, () => {
-                  if (chrome.runtime.lastError) {
-                    // Ошибка обновления вкладки
-                  }
-                  
-                  // Снимаем флаг подавления ПОСЛЕ навигации
-                  suppressStorageRuleUpdate = false;
-                  sendResponse({ success: true });
-                });
+                // Добавляем задержку перед переходом, чтобы правила успели обновиться
+                setTimeout(() => {
+                  // Дополнительная проверка, что домен действительно разблокирован
+                  chrome.storage.local.get({ blocked: [] }, (finalCheck) => {
+                    const isStillBlocked = finalCheck.blocked.includes(domain);
+                    
+                    if (isStillBlocked) {
+                      // Если домен все еще заблокирован, возвращаем ошибку
+                      suppressStorageRuleUpdate = false;
+                      sendResponse({ success: false, error: 'Domain is still blocked' });
+                      return;
+                    }
+                    
+                    chrome.tabs.update(tabId, { url: targetUrl }, () => {
+                      if (chrome.runtime.lastError) {
+                        // Ошибка обновления вкладки
+                      }
+                      
+                      // Снимаем флаг подавления ПОСЛЕ навигации
+                      setTimeout(() => {
+                        suppressStorageRuleUpdate = false;
+                        sendResponse({ success: true });
+                      }, 100);
+                    });
+                  });
+                }, 300); // 300ms задержка для обновления правил
               } else {
                 suppressStorageRuleUpdate = false;
                 sendResponse({ success: false, error: 'No tabId provided' });
